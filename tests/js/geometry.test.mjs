@@ -10,8 +10,9 @@ const defaultLayout = JSON.parse(
 );
 
 test('zoneOf finds the containing zone', () => {
-  const z = zoneOf(defaultLayout.zones, 70, 45);
-  assert.equal(z.id, 'D');
+  // zone "1": x:-70, y:0, w:75, d:60 — point (-40, 30) is inside
+  const z = zoneOf(defaultLayout.zones, -40, 30);
+  assert.equal(z.id, '1');
 });
 
 test('zoneOf returns null outside every zone', () => {
@@ -45,14 +46,20 @@ test('expandBins produces bays x levels bins per run', () => {
 
 test('expanded bin labels follow ZONE-ROW-BAY-LEVEL', () => {
   const bins = expandBins(defaultLayout);
-  assert.match(bins[0].bin_label, /^[A-Z?]+-[A-Za-z0-9]+-\d{2}-\d+$/);
+  assert.match(bins[0].bin_label, /^[A-Za-z0-9?]+-[A-Za-z0-9]+-\d{2}-\d+$/);
 });
 
 test('enrichForExport adds zone, distance and bins without mutating state', () => {
-  const snapshot = JSON.parse(JSON.stringify(defaultLayout));
-  const out = enrichForExport(defaultLayout);
+  const layout = JSON.parse(JSON.stringify(defaultLayout));
+  layout.nodes = [
+    { id: 'N1', kind: 'junction', x: -40, y: 30 },
+    { id: 'N2', kind: 'junction', x: -50, y: 30 },
+  ];
+  layout.edges = [{ a: 'N1', b: 'N2', ramp: false }];
+  const snapshot = JSON.parse(JSON.stringify(layout));
+  const out = enrichForExport(layout);
   assert.ok(Array.isArray(out.bins));
   assert.ok('zone' in out.nodes[0]);
   assert.ok('distance_m' in out.edges[0]);
-  assert.deepEqual(defaultLayout, snapshot); // input untouched
+  assert.deepEqual(layout, snapshot); // input untouched
 });
